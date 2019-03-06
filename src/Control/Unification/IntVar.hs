@@ -29,14 +29,7 @@
 --         Amr Sabry (2005) /Backtracking, Interleaving, and/
 --         /Terminating Monad Transformers/, ICFP.
 ----------------------------------------------------------------
-module Control.Unification.IntVar
-    ( IntVar(..)
-    , IntBindingState()
-    , IntBindingT()
-    , runIntBindingT
-    , evalIntBindingT
-    , execIntBindingT
-    ) where
+module Control.Unification.IntVar where
 
 import Prelude hiding (mapM, sequence, foldr, foldr1, foldl, foldl1)
 
@@ -145,13 +138,13 @@ instance (MonadLogic m) => MonadLogic (IntBindingT t m) where
         where
         coerce Nothing        = Nothing
         coerce (Just (a, m')) = Just (a, IBT m')
-    
+
     interleave (IBT l) (IBT r) = IBT (interleave l r)
-    
+
     IBT m >>- f = IBT (m >>- (unIBT . f))
-    
+
     ifte (IBT b) t (IBT f) = IBT (ifte b (unIBT . t) f)
-    
+
     once (IBT m) = IBT (once m)
 
 ----------------------------------------------------------------
@@ -174,9 +167,9 @@ execIntBindingT (IBT m) = execStateT m emptyIntBindingState
 instance (Unifiable t, Applicative m, Monad m) =>
     BindingMonad t IntVar (IntBindingT t m)
     where
-    
+
     lookupVar (IntVar v) = IBT $ gets (IM.lookup v . varBindings)
-    
+
     freeVar = IBT $ do
         ibs <- get
         let v = nextFreeVar ibs
@@ -185,7 +178,7 @@ instance (Unifiable t, Applicative m, Monad m) =>
             else do
                 put $ ibs { nextFreeVar = v+1 }
                 return $ IntVar v
-    
+
     newVar t = IBT $ do
         ibs <- get
         let v = nextFreeVar ibs
@@ -195,7 +188,7 @@ instance (Unifiable t, Applicative m, Monad m) =>
                 let bs' = IM.insert v t (varBindings ibs)
                 put $ ibs { nextFreeVar = v+1, varBindings = bs' }
                 return $ IntVar v
-    
+
     bindVar (IntVar v) t = IBT $ do
         ibs <- get
         let bs' = IM.insert v t (varBindings ibs)

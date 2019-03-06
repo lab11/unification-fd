@@ -18,11 +18,7 @@
 -- This module defines an implementation of unification variables
 -- using the 'ST' monad.
 ----------------------------------------------------------------
-module Control.Unification.STVar
-    ( STVar()
-    , STBinding()
-    , runSTBinding
-    ) where
+module Control.Unification.STVar where
 
 import Prelude hiding (mapM, sequence, foldr, foldr1, foldl, foldl1)
 
@@ -117,11 +113,11 @@ instance (Unifiable t) =>
     where
 
     lookupVar (STVar _ p) = STB . lift $ readSTRef p
-    
+
     freeVar  = _newSTVar "freeVar" Nothing
-    
+
     newVar t = _newSTVar "newVar" (Just t)
-    
+
     bindVar (STVar _ p) t = STB . lift $ writeSTRef p (Just t)
 
 ----------------------------------------------------------------
