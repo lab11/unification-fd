@@ -48,8 +48,7 @@ Flag splitBase
 ----------------------------------------------------------------
 Library
     Hs-Source-Dirs:  src
-    Exposed-Modules: Data.Functor.Fixedpoint
-                   , Control.Monad.State.UnificationExtras
+    Exposed-Modules:  Control.Monad.State.UnificationExtras
                    , Control.Monad.MaybeK
                    , Control.Monad.EitherK
                    , Control.Unification

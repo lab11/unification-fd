@@ -50,7 +50,7 @@ module Control.Unification.Types
 import Prelude hiding (mapM, sequence, foldr, foldr1, foldl, foldl1)
 
 import Data.Word               (Word8)
-import Data.Functor.Fixedpoint (Fix(..))
+import Data.Functor.Foldable   (Fix(..),unfix)
 import Data.Monoid             ((<>))
 #if __GLASGOW_HASKELL__ < 710
 import Data.Foldable           (Foldable(..))
@@ -134,7 +134,7 @@ instance (Functor t, MonadPlus t) => MonadPlus (UTerm t) where
 
 -- | /O(n)/. Embed a pure term as a mutable term.
 unfreeze :: (Functor t) => Fix t -> UTerm t v
-unfreeze = UTerm . fmap unfreeze . unFix
+unfreeze = UTerm . fmap unfreeze . unfix
 
 
 -- | /O(n)/. Extract a pure term from a mutable term, or return
@@ -177,7 +177,7 @@ class Fallible t v a where
     -- should express the same context as if we had performed the
     -- occurs-check, in order for error messages to be intelligable.
     occursFailure :: v -> UTerm t v -> a
-    
+
     -- | The top-most level of the terms do not match (according
     -- to 'zipMatch'). In logic programming this should simply be
     -- treated as unification failure; in type checking this should
@@ -230,21 +230,21 @@ instance (Show (t (UTerm t v)), Show v) =>
 instance (Functor t) => Functor (UFailure t) where
     fmap f (OccursFailure v t) =
         OccursFailure (f v) (fmap f t)
-    
+
     fmap f (MismatchFailure tl tr) =
         MismatchFailure (fmap f <$> tl) (fmap f <$> tr)
 
 instance (Foldable t) => Foldable (UFailure t) where
     foldMap f (OccursFailure v t) =
         f v <> foldMap f t
-    
+
     foldMap f (MismatchFailure tl tr) =
         foldMap (foldMap f) tl <> foldMap (foldMap f) tr
 
 instance (Traversable t) => Traversable (UFailure t) where
     traverse f (OccursFailure v t) =
         OccursFailure <$> f v <*> traverse f t
-    
+
     traverse f (MismatchFailure tl tr) =
         MismatchFailure <$> traverse (traverse f) tl
                         <*> traverse (traverse f) tr
@@ -256,7 +256,7 @@ instance (Traversable t) => Traversable (UFailure t) where
 -- to be functors and require the distributivity of 'sequence' or
 -- 'mapM'.
 class (Traversable t) => Unifiable t where
-    
+
     -- | Perform one level of equality testing for terms. If the
     -- term constructors are unequal then return @Nothing@; if they
     -- are equal, then return the one-level spine filled with
@@ -271,7 +271,7 @@ class (Traversable t) => Unifiable t where
 -- than having our own @eqVar@ method so that clients can make use
 -- of library functions which commonly assume 'Eq'.
 class (Eq v) => Variable v where
-    
+
     -- | Return a unique identifier for this variable, in order to
     -- support the use of visited-sets instead of occurs-checks.
     -- This function must satisfy the following coherence law with
@@ -296,25 +296,25 @@ class (Eq v) => Variable v where
 class (Unifiable t, Variable v, Applicative m, Monad m) =>
     BindingMonad t v m | m t -> v, v m -> t
     where
-    
+
     -- | Given a variable pointing to @UTerm t v@, return the
     -- term it's bound to, or @Nothing@ if the variable is unbound.
     lookupVar :: v -> m (Maybe (UTerm t v))
-    
-    
+
+
     -- | Generate a new free variable guaranteed to be fresh in
     -- @m@.
     freeVar :: m v
-    
-    
+
+
     -- | Generate a new variable (fresh in @m@) bound to the given
     -- term. The default implementation is:
     --
     -- > newVar t = do { v <- freeVar ; bindVar v t ; return v }
     newVar :: UTerm t v -> m v
     newVar t = do { v <- freeVar ; bindVar v t ; return v }
-    
-    
+
+
     -- | Bind a variable to a term, overriding any previous binding.
     bindVar :: v -> UTerm t v -> m ()
 
@@ -357,14 +357,14 @@ instance Monoid (Rank t v) where
 class (BindingMonad t v m) =>
     RankedBindingMonad t v m | m t -> v, v m -> t
     where
-    
+
     -- | Given a variable pointing to @UTerm t v@, return its
     -- rank and the term it's bound to.
     lookupRankVar :: v -> m (Rank t v)
-    
+
     -- | Increase the rank of a variable by one.
     incrementRank :: v -> m ()
-    
+
     -- | Bind a variable to a term and increment the rank at the
     -- same time. The default implementation is:
     --
